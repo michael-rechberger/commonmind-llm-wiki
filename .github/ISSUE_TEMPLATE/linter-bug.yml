@@ -1,0 +1,28 @@
+name: Linter bug
+description: commonmind-lint reports something wrong, or misses something
+labels: [linter, bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran and the output (shorten or anonymize it).
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: Name the section of the specification if it applies.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Minimal example
+      description: A small page or profile file that shows the problem, with fictional content.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Release or commit of commonmind-lint.

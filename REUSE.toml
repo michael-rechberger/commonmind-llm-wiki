@@ -1,0 +1,22 @@
+version = 1
+SPDX-PackageName = "Commonmind"
+SPDX-PackageSupplier = "Michael Rechberger"
+SPDX-PackageDownloadLocation = "https://github.com/michael-rechberger/commonmind-llm-wiki"
+
+# Specification and documentation
+[[annotations]]
+path = ["SPEC.md", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "CLAUDE.md", "STATUS.md", "docs/**"]
+SPDX-FileCopyrightText = "2026 Michael Rechberger"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# Linter, schema and project files
+[[annotations]]
+path = ["src/**", "tests/**", "schema/**", "pyproject.toml", "uv.lock", ".gitignore", "REUSE.toml", ".github/**"]
+SPDX-FileCopyrightText = "2026 Michael Rechberger"
+SPDX-License-Identifier = "MIT"
+
+# Templates and example wiki: copy them freely into your own wiki
+[[annotations]]
+path = ["templates/**", "examples/**"]
+SPDX-FileCopyrightText = "2026 Michael Rechberger"
+SPDX-License-Identifier = "CC0-1.0"

@@ -1,0 +1,41 @@
+name: Spec change proposal
+description: Propose a change to the specification (SPEC.md)
+labels: [spec]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What does the specification not cover, or cover badly?
+    validations:
+      required: true
+  - type: textarea
+    id: where
+    attributes:
+      label: Where it occurs
+      description: The wiki or situation where you met the problem (no confidential details).
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should change? Name the sections concerned.
+    validations:
+      required: true
+  - type: dropdown
+    id: operation
+    attributes:
+      label: In operation?
+      description: Rules are published once they run in a real wiki.
+      options:
+        - Yes, in a wiki I run
+        - Not yet
+    validations:
+      required: true
+  - type: checkboxes
+    id: fields
+    attributes:
+      label: New fields
+      options:
+        - label: If my proposal adds a field, a consumer uses it and it cannot be expressed with type, tags or links (section 4.3).

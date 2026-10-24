@@ -1,0 +1,22 @@
+commonmind_version: "1.1"
+wiki_id: acme-team
+title: ACME Team Wiki
+types: [organization, project, person, method, decision, policy, topic, agenda, minutes]
+data_classes: [public, internal, confidential]
+default_data_class: confidential
+data_class_defaults:
+  organizations: confidential
+  projects: confidential
+  decisions: confidential
+  methods: internal
+  people: internal
+  about: internal
+self_domain: about
+person_relations: [member, associate, contact]
+domain_owners:
+  organizations: human:jdoe
+  projects: human:jdoe
+  methods: role:delivery-lead
+  people: role:office
+  about: role:office
+tags: [data-platform, retrospective, agile]
