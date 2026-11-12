@@ -11,7 +11,7 @@ SPDX-License-Identifier = "CC-BY-4.0"
 
 # Linter, schema and project files
 [[annotations]]
-path = ["src/**", "tests/**", "schema/**", "pyproject.toml", "uv.lock", ".gitignore", "REUSE.toml", ".github/**"]
+path = ["src/**", "tests/**", "schema/**", "pyproject.toml", "uv.lock", ".gitignore", "REUSE.toml", ".github/**", "scripts/**"]
 SPDX-FileCopyrightText = "2026 Michael Rechberger"
 SPDX-License-Identifier = "MIT"
 
