@@ -21,10 +21,10 @@ Pull requests are welcome. Before you open one:
 
 ```bash
 uv sync
-uv run pytest
-uv run ruff check src tests
-uv run commonmind-lint --strict examples/acme-wiki
+scripts/check.sh   # lint, format, tests and the example wiki, exactly as CI runs them
 ```
+
+If the format check fails, `uv run ruff format .` fixes it.
 
 Examples use fictional organizations and people only (ACME, Globex, John Doe).
 
