@@ -7,12 +7,16 @@ from commonmind_lint.lint import lint
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="commonmind-lint",
-                                     description="Check a Commonmind wiki repository.")
+    parser = argparse.ArgumentParser(
+        prog="commonmind-lint", description="Check a Commonmind wiki repository."
+    )
     parser.add_argument("path", nargs="?", default=".", help="repository root (default: .)")
     parser.add_argument("--strict", action="store_true", help="fail on warnings too")
-    parser.add_argument("--summary", action="store_true",
-                        help="print counts per check only, without paths or messages")
+    parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="print counts per check only, without paths or messages",
+    )
     args = parser.parse_args(argv)
 
     findings = lint(args.path)

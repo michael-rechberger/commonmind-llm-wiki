@@ -137,15 +137,23 @@ def load_wiki(root: Path | str) -> tuple[Wiki | None, list[Finding]]:
     root = Path(root).resolve()
     profile_path = root / "commonmind.yaml"
     if not profile_path.is_file():
-        return None, [Finding("commonmind.yaml", 1, "error", "profile-missing",
-                              "profile file commonmind.yaml is missing")]
+        return None, [
+            Finding(
+                "commonmind.yaml",
+                1,
+                "error",
+                "profile-missing",
+                "profile file commonmind.yaml is missing",
+            )
+        ]
     try:
         profile = yaml.load(profile_path.read_text(encoding="utf-8"), Loader=_Loader) or {}
     except yaml.YAMLError as exc:
         return None, [Finding("commonmind.yaml", 1, "error", "profile-invalid", str(exc))]
     if not isinstance(profile, dict):
-        return None, [Finding("commonmind.yaml", 1, "error", "profile-invalid",
-                              "profile is not a mapping")]
+        return None, [
+            Finding("commonmind.yaml", 1, "error", "profile-invalid", "profile is not a mapping")
+        ]
     wiki = Wiki(root, profile)
     if wiki.bundle.is_dir():
         for path in sorted(wiki.bundle.rglob("*.md")):
@@ -197,41 +205,77 @@ def _check_indexes(wiki: Wiki) -> list[Finding]:
     if root_page is None:
         found.append(Finding("wiki/index.md", 1, "error", "root-index", "wiki/index.md is missing"))
     elif meta is None or set(meta) != {"okf_version"} or str(meta["okf_version"]) != "0.2":
-        found.append(Finding(root_page.rel, 1, "error", "root-index",
-                             'frontmatter must be only okf_version: "0.2"'))
+        found.append(
+            Finding(
+                root_page.rel,
+                1,
+                "error",
+                "root-index",
+                'frontmatter must be only okf_version: "0.2"',
+            )
+        )
     for index in wiki.indexes:
         first = next((ln for ln in index.body.splitlines() if ln.strip()), "")
         if not first.startswith("# "):
-            found.append(Finding(index.rel, index.body_line, "warning", "index-title-missing",
-                                 "index.md should begin with a level-1 heading"))
+            found.append(
+                Finding(
+                    index.rel,
+                    index.body_line,
+                    "warning",
+                    "index-title-missing",
+                    "index.md should begin with a level-1 heading",
+                )
+            )
         if index.path != root_index and (index.meta is not None or index.error):
-            found.append(Finding(index.rel, 1, "error", "domain-index-frontmatter",
-                                 "domain index.md must not have frontmatter"))
+            found.append(
+                Finding(
+                    index.rel,
+                    1,
+                    "error",
+                    "domain-index-frontmatter",
+                    "domain index.md must not have frontmatter",
+                )
+            )
     if wiki.bundle.is_dir():
         for domain in sorted(d for d in wiki.bundle.iterdir() if d.is_dir()):
             if not (domain / "index.md").is_file():
                 rel = (domain / "index.md").relative_to(wiki.root).as_posix()
-                found.append(Finding(rel, 1, "warning", "domain-index-missing",
-                                     f"domain '{domain.name}' has no index.md"))
+                found.append(
+                    Finding(
+                        rel,
+                        1,
+                        "warning",
+                        "domain-index-missing",
+                        f"domain '{domain.name}' has no index.md",
+                    )
+                )
     return found
 
 
-def _check_frontmatter(wiki: Wiki, page: Page, validator: Draft202012Validator,
-                       now: datetime) -> list[Finding]:
+def _check_frontmatter(
+    wiki: Wiki, page: Page, validator: Draft202012Validator, now: datetime
+) -> list[Finding]:
     def finding(level: Level, code: str, message: str) -> Finding:
         return Finding(page.rel, 1, level, code, message)
 
     if page.meta is None:
         return [finding("error", "frontmatter", page.error or "page has no YAML frontmatter")]
     meta, profile = page.meta, wiki.profile
-    found = [finding("error", "schema", f"{'.'.join(map(str, e.path)) or 'page'}: {e.message}")
-             for e in sorted(validator.iter_errors(meta), key=lambda e: list(e.path))]
+    found = [
+        finding("error", "schema", f"{'.'.join(map(str, e.path)) or 'page'}: {e.message}")
+        for e in sorted(validator.iter_errors(meta), key=lambda e: list(e.path))
+    ]
     if "domain" in meta:
         found.append(finding("error", "domain-field", "'domain' follows from the folder"))
     owner = meta.get("owner")
     if isinstance(owner, str) and ACTOR.match(owner) and not owner.startswith(ACCOUNTABLE):
-        found.append(finding("warning", "owner-not-accountable",
-                             f"owner '{owner}' should be a human: or role: actor"))
+        found.append(
+            finding(
+                "warning",
+                "owner-not-accountable",
+                f"owner '{owner}' should be a human: or role: actor",
+            )
+        )
     type_ = meta.get("type")
     if isinstance(type_, str) and type_ not in (profile.get("types") or []):
         found.append(finding("error", "unknown-type", f"type '{type_}' is not in the profile"))
@@ -241,15 +285,23 @@ def _check_frontmatter(wiki: Wiki, page: Page, validator: Draft202012Validator,
     if data_class is None:
         found.append(finding("warning", "data-class-missing", "data_class is not set"))
     elif data_class not in classes:
-        found.append(finding("error", "unknown-data-class",
-                             f"data_class '{data_class}' is not in the profile"))
+        found.append(
+            finding(
+                "error", "unknown-data-class", f"data_class '{data_class}' is not in the profile"
+            )
+        )
     else:
         folder_default = (profile.get("data_class_defaults") or {}).get(wiki.domain(page))
         if folder_default in classes and wiki.class_rank(data_class) < wiki.class_rank(
-                folder_default):
-            found.append(finding("error", "class-below-default",
-                                 f"data_class '{data_class}' is below the folder default "
-                                 f"'{folder_default}'"))
+            folder_default
+        ):
+            found.append(
+                finding(
+                    "error",
+                    "class-below-default",
+                    f"data_class '{data_class}' is below the folder default '{folder_default}'",
+                )
+            )
 
     if type_ == "project" and "project_status" not in meta:
         found.append(finding("warning", "project-status-missing", "project without project_status"))
@@ -259,8 +311,9 @@ def _check_frontmatter(wiki: Wiki, page: Page, validator: Draft202012Validator,
         if relation is None:
             found.append(finding("warning", "relation-missing", "person without relation"))
         elif relations is not None and relation not in relations:
-            found.append(finding("error", "unknown-relation",
-                                 f"relation '{relation}' is not in the profile"))
+            found.append(
+                finding("error", "unknown-relation", f"relation '{relation}' is not in the profile")
+            )
     if "tags" in profile and isinstance(meta.get("tags"), list):
         for tag in meta["tags"]:
             if tag not in (profile.get("tags") or []):
@@ -271,8 +324,13 @@ def _check_frontmatter(wiki: Wiki, page: Page, validator: Draft202012Validator,
     verified = meta.get("verified")
     stamps = [verified] if isinstance(verified, dict) else verified or []
     if author and any(isinstance(v, dict) and v.get("by") == author for v in stamps):
-        found.append(finding("warning", "self-verified",
-                             f"'{author}' verified its own content; review by another actor"))
+        found.append(
+            finding(
+                "warning",
+                "self-verified",
+                f"'{author}' verified its own content; review by another actor",
+            )
+        )
 
     stale_after = meta.get("stale_after")
     if isinstance(stale_after, str):
@@ -281,15 +339,17 @@ def _check_frontmatter(wiki: Wiki, page: Page, validator: Draft202012Validator,
         except ValueError:
             due = None
         if due is not None and due < now:
-            found.append(finding("warning", "stale",
-                                 f"stale since {stale_after}, owner {meta.get('owner')}"))
+            found.append(
+                finding("warning", "stale", f"stale since {stale_after}, owner {meta.get('owner')}")
+            )
 
     for source in meta.get("sources") or []:
         resource = source.get("resource") if isinstance(source, dict) else None
         local = isinstance(resource, str) and not URI_SCHEME.match(resource)
         if local and not (wiki.root / resource).exists():
-            found.append(finding("warning", "source-missing",
-                                 f"source '{resource}' does not exist"))
+            found.append(
+                finding("warning", "source-missing", f"source '{resource}' does not exist")
+            )
     return found
 
 
@@ -306,26 +366,54 @@ def _check_body(wiki: Wiki, page: Page, incoming: dict[Path, int]) -> list[Findi
     found = []
     text = _mask_code(page.body)
     for match in WIKILINK.finditer(text):
-        found.append(Finding(page.rel, _line(page, text, match.start()), "error", "editor-syntax",
-                             f"wiki link or embed {match.group(0)}"))
+        found.append(
+            Finding(
+                page.rel,
+                _line(page, text, match.start()),
+                "error",
+                "editor-syntax",
+                f"wiki link or embed {match.group(0)}",
+            )
+        )
     for match in CALLOUT.finditer(text):
-        found.append(Finding(page.rel, _line(page, text, match.start()), "error", "editor-syntax",
-                             "callout; use a plain blockquote"))
+        found.append(
+            Finding(
+                page.rel,
+                _line(page, text, match.start()),
+                "error",
+                "editor-syntax",
+                "callout; use a plain blockquote",
+            )
+        )
     for match in LINK.finditer(text):
         target = match.group(1) or match.group(2)
         path = _resolve(wiki, page, target)
         if path is None:
             continue
         if not path.is_file():
-            found.append(Finding(page.rel, _line(page, text, match.start()), "error",
-                                 "broken-link", f"link target '{target}' does not exist"))
+            found.append(
+                Finding(
+                    page.rel,
+                    _line(page, text, match.start()),
+                    "error",
+                    "broken-link",
+                    f"link target '{target}' does not exist",
+                )
+            )
         elif path != page.path.resolve():
             incoming[path] = incoming.get(path, 0) + 1
     if page.meta is not None and page.path.name != "index.md":
         ids = {s.get("id") for s in page.meta.get("sources") or [] if isinstance(s, dict)}
         for ref in sorted({m.group(1) for m in FOOTNOTE_REF.finditer(text)} - ids):
-            found.append(Finding(page.rel, page.body_line, "warning", "footnote-unknown",
-                                 f"footnote [^{ref}] has no entry in sources"))
+            found.append(
+                Finding(
+                    page.rel,
+                    page.body_line,
+                    "warning",
+                    "footnote-unknown",
+                    f"footnote [^{ref}] has no entry in sources",
+                )
+            )
     return found
 
 
@@ -335,11 +423,19 @@ def _check_names(wiki: Wiki) -> list[Finding]:
         parts = page.path.relative_to(wiki.bundle).with_suffix("").parts
         bad = [part for part in parts if not KEBAB.match(part)]
         if bad:
-            found.append(Finding(page.rel, 1, "warning", "file-name",
-                                 "file and folder names must be lowercase kebab-case"))
+            found.append(
+                Finding(
+                    page.rel,
+                    1,
+                    "warning",
+                    "file-name",
+                    "file and folder names must be lowercase kebab-case",
+                )
+            )
         if len(parts) == 1:
-            found.append(Finding(page.rel, 1, "warning", "no-domain",
-                                 "page is not inside a domain folder"))
+            found.append(
+                Finding(page.rel, 1, "warning", "no-domain", "page is not inside a domain folder")
+            )
     return found
 
 
@@ -350,8 +446,15 @@ def _check_log(wiki: Wiki) -> list[Finding]:
     found = []
     for number, line in enumerate(log.read_text(encoding="utf-8").splitlines(), start=1):
         if line.startswith("## ") and not LOG_HEADING.match(line):
-            found.append(Finding("log.md", number, "error", "log-heading",
-                                 "entry heading must be '## [YYYY-MM-DD] <operation> | <title>'"))
+            found.append(
+                Finding(
+                    "log.md",
+                    number,
+                    "error",
+                    "log-heading",
+                    "entry heading must be '## [YYYY-MM-DD] <operation> | <title>'",
+                )
+            )
     return found
 
 
@@ -360,23 +463,47 @@ def _check_meetings(wiki: Wiki, validator: Draft202012Validator) -> list[Finding
     types = wiki.profile.get("types") or []
     for meeting in wiki.meetings:
         if not MEETING_NAME.match(meeting.path.name):
-            found.append(Finding(meeting.rel, 1, "error", "meeting-file-name",
-                                 "name must be YYYY-MM-DD-<kebab-title>.md"))
+            found.append(
+                Finding(
+                    meeting.rel,
+                    1,
+                    "error",
+                    "meeting-file-name",
+                    "name must be YYYY-MM-DD-<kebab-title>.md",
+                )
+            )
         if meeting.meta is None:
-            found.append(Finding(meeting.rel, 1, "error", "frontmatter",
-                                 meeting.error or "meeting file has no YAML frontmatter"))
+            found.append(
+                Finding(
+                    meeting.rel,
+                    1,
+                    "error",
+                    "frontmatter",
+                    meeting.error or "meeting file has no YAML frontmatter",
+                )
+            )
             continue
         for error in validator.iter_errors(meeting.meta):
             where = ".".join(map(str, error.path)) or "meeting"
             found.append(Finding(meeting.rel, 1, "error", "schema", f"{where}: {error.message}"))
         type_ = meeting.meta.get("type")
         if isinstance(type_, str) and type_ not in types:
-            found.append(Finding(meeting.rel, 1, "error", "unknown-type",
-                                 f"type '{type_}' is not in the profile"))
+            found.append(
+                Finding(
+                    meeting.rel, 1, "error", "unknown-type", f"type '{type_}' is not in the profile"
+                )
+            )
         for target in meeting.meta.get("related") or []:
             if isinstance(target, str) and not (wiki.bundle / target.lstrip("/")).is_file():
-                found.append(Finding(meeting.rel, 1, "error", "broken-link",
-                                     f"related page '{target}' does not exist"))
+                found.append(
+                    Finding(
+                        meeting.rel,
+                        1,
+                        "error",
+                        "broken-link",
+                        f"related page '{target}' does not exist",
+                    )
+                )
     return found
 
 
@@ -399,8 +526,15 @@ def lint(root: Path | str, now: datetime | None = None) -> list[Finding]:
         found += _check_body(wiki, index, index_links)
     for page in wiki.pages:
         if page.path.resolve() not in incoming:
-            found.append(Finding(page.rel, 1, "warning", "orphan",
-                                 "no other page links here (index.md does not count)"))
+            found.append(
+                Finding(
+                    page.rel,
+                    1,
+                    "warning",
+                    "orphan",
+                    "no other page links here (index.md does not count)",
+                )
+            )
     found += _check_log(wiki)
     found += _check_meetings(wiki, meeting_validator)
     return sorted(found, key=lambda f: (f.path, f.line, f.code))

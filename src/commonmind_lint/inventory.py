@@ -20,8 +20,9 @@ EMBED = re.compile(r"!\[\[([^\]]+)\]\]")
 CALLOUT = re.compile(r"^[ \t]*>[ \t]*\[!([A-Za-z-]+)\]", re.MULTILINE)
 DATAVIEW = re.compile(r"^```dataview", re.MULTILINE)
 MD_LINK = re.compile(r"(?<!!)\[[^\]]*\]\([^)]+\)")
-UMLAUTS = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "Ä": "ae", "Ö": "oe", "Ü": "ue",
-                         "ß": "ss"})
+UMLAUTS = str.maketrans(
+    {"ä": "ae", "ö": "oe", "ü": "ue", "Ä": "ae", "Ö": "oe", "Ü": "ue", "ß": "ss"}
+)
 
 
 def kebab(name: str) -> str:
@@ -117,8 +118,11 @@ def inventory(root: Path | str) -> dict:
     for p in stems:
         by_folder.setdefault(p.parent, Counter())[kebab(p.stem)] += 1
     log = root / "log.md"
-    headings = [line for line in log.read_text(encoding="utf-8").splitlines()
-                if line.startswith("## ")] if log.is_file() else []
+    headings = (
+        [line for line in log.read_text(encoding="utf-8").splitlines() if line.startswith("## ")]
+        if log.is_file()
+        else []
+    )
 
     return {
         "pages": {"total": len(files), "per_folder": dict(sorted(per_folder.items()))},
@@ -130,8 +134,18 @@ def inventory(root: Path | str) -> dict:
         },
         "tags": {"distinct": len(tags), "not_kebab_case": sum(not KEBAB.match(t) for t in tags)},
         "sources": {k: src[k] for k in ("entries", "as_text", "as_object", "found")},
-        "wikilinks": {k: links[k] for k in ("total", "with_alias", "with_path", "with_heading",
-                                            "to_pages", "to_sources", "unresolved")},
+        "wikilinks": {
+            k: links[k]
+            for k in (
+                "total",
+                "with_alias",
+                "with_path",
+                "with_heading",
+                "to_pages",
+                "to_sources",
+                "unresolved",
+            )
+        },
         "embeds": dict(sorted(embeds.items())),
         "callouts": dict(sorted(callouts.items())),
         "other_syntax": dict(sorted(other.items())),
@@ -139,14 +153,16 @@ def inventory(root: Path | str) -> dict:
             "not_kebab_case": sum(not KEBAB.match(p.stem) for p in stems),
             "non_ascii": sum(not p.stem.isascii() for p in stems),
             "duplicate_basenames": sum(
-                c - 1 for c in Counter(p.stem.lower() for p in stems).values() if c > 1),
+                c - 1 for c in Counter(p.stem.lower() for p in stems).values() if c > 1
+            ),
             "kebab_collisions": sum(c - 1 for f in by_folder.values() for c in f.values() if c > 1),
         },
         "log": {
             "exists": log.is_file(),
             "headings": len(headings),
-            "commonmind_format": sum(bool(re.match(r"^## \[\d{4}-\d{2}-\d{2}\] \S+ \| ", h))
-                                     for h in headings),
+            "commonmind_format": sum(
+                bool(re.match(r"^## \[\d{4}-\d{2}-\d{2}\] \S+ \| ", h)) for h in headings
+            ),
             "date_first": sum(bool(re.match(r"^## \d{4}-\d{2}-\d{2}", h)) for h in headings),
             "other": sum(not re.match(r"^## \[?\d{4}-\d{2}-\d{2}", h) for h in headings),
         },
@@ -154,8 +170,9 @@ def inventory(root: Path | str) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="commonmind-inventory",
-                                     description="Count Obsidian-style constructs (no content).")
+    parser = argparse.ArgumentParser(
+        prog="commonmind-inventory", description="Count Obsidian-style constructs (no content)."
+    )
     parser.add_argument("path", nargs="?", default=".", help="repository root (default: .)")
     parser.add_argument("-o", "--output", help="write JSON to this file instead of stdout")
     args = parser.parse_args(argv)

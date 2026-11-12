@@ -164,9 +164,14 @@ def obsidian(root: Path, **overrides: str | None) -> Path:
 
 def run(root: Path, **kwargs):
     kwargs.setdefault("domain_titles", {})
-    return migrate(root, root / "tools/migration/migration-map.yaml",
-                   root / "tools/migration/description-map.yaml",
-                   generated_by="agent:wiki-update", today="2026-10-18", **kwargs)
+    return migrate(
+        root,
+        root / "tools/migration/migration-map.yaml",
+        root / "tools/migration/description-map.yaml",
+        generated_by="agent:wiki-update",
+        today="2026-10-18",
+        **kwargs,
+    )
 
 
 def front(path: Path) -> dict:
@@ -193,16 +198,28 @@ def test_files_are_moved(tmp_path):
 def test_project_frontmatter(tmp_path):
     run(obsidian(tmp_path))
     meta = front(tmp_path / "wiki/projects/globex-data-platform.md")
-    assert list(meta) == ["type", "title", "description", "owner", "data_class",
-                          "project_status", "tags", "sources", "generated"]
+    assert list(meta) == [
+        "type",
+        "title",
+        "description",
+        "owner",
+        "data_class",
+        "project_status",
+        "tags",
+        "sources",
+        "generated",
+    ]
     assert meta["type"] == "project"
     assert meta["project_status"] == "active"
     assert meta["owner"] == "human:jane-doe"
     assert meta["description"] == "Data platform for Globex, 2026."
     assert meta["generated"] == {"by": "agent:wiki-update", "at": "2026-10-01T00:00:00Z"}
     assert meta["sources"] == [
-        {"id": "globex-kickoff", "resource": "sources/inbox/2026-03-02 Globex Kickoff.md",
-         "title": "Globex kick-off"},
+        {
+            "id": "globex-kickoff",
+            "resource": "sources/inbox/2026-03-02 Globex Kickoff.md",
+            "title": "Globex kick-off",
+        },
         {"id": "notes", "resource": "sources/inbox/Notes.md", "title": "Notes"},
     ]
 
@@ -236,8 +253,10 @@ def test_domain_index_is_generated(tmp_path):
     assert index.startswith("# Organizations\n\n> **Overview**")
     assert "> **Overview**\n> All clients we work with." in index
     assert "![[" not in index and "[!abstract]" not in index
-    assert ("<!-- commonmind:index -->\n- [Globex AG](/organizations/globex-ag.md): "
-            "Client in manufacturing.\n<!-- /commonmind:index -->") in index
+    assert (
+        "<!-- commonmind:index -->\n- [Globex AG](/organizations/globex-ag.md): "
+        "Client in manufacturing.\n<!-- /commonmind:index -->"
+    ) in index
     assert (tmp_path / "wiki/people/index.md").read_text(encoding="utf-8").startswith("# People")
 
 
@@ -267,9 +286,11 @@ def test_log_headings_and_entry(tmp_path):
     log = (tmp_path / "log.md").read_text(encoding="utf-8")
     assert "## [2026-09-01] ingest | Globex kickoff\n\nCreated Globex." in log
     assert "## [2026-10-01] update | Lint run\n" in log
-    assert log.rstrip().endswith("## [2026-10-18] migrate | Commonmind 1.0\n\n"
-                                 "Migrated 5 files from Obsidian style (SPEC Appendix A); "
-                                 "log headings reformatted once.")
+    assert log.rstrip().endswith(
+        "## [2026-10-18] migrate | Commonmind 1.0\n\n"
+        "Migrated 5 files from Obsidian style (SPEC Appendix A); "
+        "log headings reformatted once."
+    )
 
 
 def test_result_passes_linter(tmp_path):
@@ -341,8 +362,12 @@ def test_sources_in_block_style(tmp_path):
 
 def test_cli_domain_title(tmp_path, capsys):
     root = obsidian(tmp_path)
-    assert main([str(root), "--generated-by", "agent:wiki-update",
-                 "--domain-title", "people=Personen"]) == 0
+    assert (
+        main(
+            [str(root), "--generated-by", "agent:wiki-update", "--domain-title", "people=Personen"]
+        )
+        == 0
+    )
     assert "- [Personen](/people/index.md)" in (root / "wiki/index.md").read_text()
 
 
