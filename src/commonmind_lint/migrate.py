@@ -24,11 +24,25 @@ from commonmind_lint.lint import LINK, URI_SCHEME, _Loader, _mask_code
 WIKILINK = re.compile(r"(!?)\[\[([^\]]+)\]\]")
 CALLOUT = re.compile(r"^([ \t]*>[ \t]*)\[![A-Za-z-]+\][+-]?[ \t]*(.*)$", re.MULTILINE)
 OLD_LOG_HEADING = re.compile(r"^## (\d{4}-\d{2}-\d{2})[ \t]*(.*?)[ \t]*$", re.MULTILINE)
-LOG_OP = re.compile(r"^(ingest|query|lint|review|promote|migrate|update)\s*:\s*(.+)$",
-                    re.IGNORECASE)
+LOG_OP = re.compile(
+    r"^(ingest|query|lint|review|promote|migrate|update)\s*:\s*(.+)$", re.IGNORECASE
+)
 DATE_PREFIX = re.compile(r"^\d{4}-\d{2}-\d{2}[ _-]*")
-FIELD_ORDER = ["type", "title", "description", "owner", "data_class", "status", "project_status",
-               "relation", "tags", "sources", "generated", "verified", "stale_after"]
+FIELD_ORDER = [
+    "type",
+    "title",
+    "description",
+    "owner",
+    "data_class",
+    "status",
+    "project_status",
+    "relation",
+    "tags",
+    "sources",
+    "generated",
+    "verified",
+    "stale_after",
+]
 DROPPED = {"domain", "last_updated", "status", "type"}
 INDEX_START, INDEX_END = "<!-- commonmind:index -->", "<!-- /commonmind:index -->"
 
@@ -78,8 +92,9 @@ FLOW_KEYS = {"tags", "generated"}
 def _dump(meta: dict) -> str:
     def one(key: str, value: object) -> str:
         if key in FLOW_KEYS:
-            flow = yaml.safe_dump(value, sort_keys=False, allow_unicode=True, width=1000,
-                                  default_flow_style=True)
+            flow = yaml.safe_dump(
+                value, sort_keys=False, allow_unicode=True, width=1000, default_flow_style=True
+            )
             return f"{key}: {flow}"
         return yaml.safe_dump({key: value}, sort_keys=False, allow_unicode=True, width=1000)
 
@@ -107,19 +122,28 @@ def _timestamp(value: object) -> str | None:
 
 
 class _Migration:
-    def __init__(self, root: Path, entries: list[Entry], descriptions: dict, profile: dict,
-                 generated_by: str, report: Report):
+    def __init__(
+        self,
+        root: Path,
+        entries: list[Entry],
+        descriptions: dict,
+        profile: dict,
+        generated_by: str,
+        report: Report,
+    ):
         self.root, self.entries, self.descriptions = root, entries, descriptions
         self.profile, self.generated_by, self.report = profile, generated_by, report
-        self.by_path = {e.old.removeprefix("wiki/").removesuffix(".md").lower(): e
-                        for e in entries}
+        self.by_path = {e.old.removeprefix("wiki/").removesuffix(".md").lower(): e for e in entries}
         stems: dict[str, list[Entry]] = {}
         for e in entries:
             stems.setdefault(PurePosixPath(e.old).stem.lower(), []).append(e)
         self.by_stem = {k: v[0] for k, v in stems.items() if len(v) == 1}
         sources = root / "sources"
-        self.sources = {p.name.lower(): p for p in sources.rglob("*") if p.is_file()} \
-            if sources.is_dir() else {}
+        self.sources = (
+            {p.name.lower(): p for p in sources.rglob("*") if p.is_file()}
+            if sources.is_dir()
+            else {}
+        )
 
     def find(self, target: str) -> Entry | None:
         key = target.strip().lower().removesuffix(".md")
@@ -157,16 +181,18 @@ class _Migration:
             path, _, anchor = target.partition("#")
             if not path or URI_SCHEME.match(path):
                 return match.group(0)
-            base = PurePosixPath("wiki") if path.startswith("/") else PurePosixPath(
-                entry.old).parent
+            base = (
+                PurePosixPath("wiki") if path.startswith("/") else PurePosixPath(entry.old).parent
+            )
             parts: list[str] = []
             for part in (base / unquote(path).lstrip("/")).parts:
                 if part == ".." and parts:
                     parts.pop()
                 elif part not in ("..", "."):
                     parts.append(part)
-            hit = self.by_path.get("/".join(parts).removeprefix("wiki/").removesuffix(".md")
-                                   .lower())
+            hit = self.by_path.get(
+                "/".join(parts).removeprefix("wiki/").removesuffix(".md").lower()
+            )
             if hit is None:
                 return match.group(0)
             self.report.links_rewritten += 1
@@ -257,17 +283,24 @@ def _domain_title(domain: str, titles: dict[str, str]) -> str:
     return titles.get(domain) or domain.replace("-", " ").capitalize()
 
 
-def migrate(root: Path | str, map_path: Path | str, descriptions_path: Path | str,
-            generated_by: str, today: str | None = None, dry_run: bool = False,
-            domain_titles: dict[str, str] | None = None) -> Report:
+def migrate(
+    root: Path | str,
+    map_path: Path | str,
+    descriptions_path: Path | str,
+    generated_by: str,
+    today: str | None = None,
+    dry_run: bool = False,
+    domain_titles: dict[str, str] | None = None,
+) -> Report:
     root = Path(root)
     report = Report()
     titles = domain_titles or {}
     today = today or date.today().isoformat()
     profile = yaml.load((root / "commonmind.yaml").read_text(encoding="utf-8"), Loader=_Loader)
     mapping = yaml.load(Path(map_path).read_text(encoding="utf-8"), Loader=_Loader) or []
-    descriptions = yaml.load(Path(descriptions_path).read_text(encoding="utf-8"),
-                             Loader=_Loader) or {}
+    descriptions = (
+        yaml.load(Path(descriptions_path).read_text(encoding="utf-8"), Loader=_Loader) or {}
+    )
 
     files = {p.relative_to(root).as_posix() for p in (root / "wiki").rglob("*.md")}
     mapped = {m["old"] for m in mapping}
@@ -307,19 +340,24 @@ def migrate(root: Path | str, map_path: Path | str, descriptions_path: Path | st
             head = f"{title}\n{head.lstrip()}"
         outputs[f"wiki/{domain}/index.md"] = f"{head.rstrip()}\n\n{_index_list(pages)}\n"
     if not (root / "wiki/index.md").is_file():
-        lines = [f"- [{_domain_title(d, titles)}](/{d}/index.md)"
-                 for d in sorted(pages_by_domain)]
+        lines = [f"- [{_domain_title(d, titles)}](/{d}/index.md)" for d in sorted(pages_by_domain)]
         title = profile.get("title") or "Wiki"
-        outputs["wiki/index.md"] = ('---\nokf_version: "0.2"\n---\n\n'
-                                    f"# {title}\n\n" + "\n".join(lines) + "\n")
+        outputs["wiki/index.md"] = (
+            f'---\nokf_version: "0.2"\n---\n\n# {title}\n\n' + "\n".join(lines) + "\n"
+        )
 
     log_path = root / "log.md"
-    log = _convert_log(log_path.read_text(encoding="utf-8"), report) if log_path.is_file() \
+    log = (
+        _convert_log(log_path.read_text(encoding="utf-8"), report)
+        if log_path.is_file()
         else "# Log\n"
+    )
     version = profile.get("commonmind_version") or "1.1"
-    log = (log.rstrip("\n") + f"\n\n## [{today}] migrate | Commonmind {version}\n\n"
-           f"Migrated {report.files} files from Obsidian style (SPEC Appendix A); "
-           "log headings reformatted once.\n")
+    log = (
+        log.rstrip("\n") + f"\n\n## [{today}] migrate | Commonmind {version}\n\n"
+        f"Migrated {report.files} files from Obsidian style (SPEC Appendix A); "
+        "log headings reformatted once.\n"
+    )
 
     base_files = sorted((root / "wiki").rglob("*.base"))
     report.base_files_removed = len(base_files)
@@ -341,22 +379,35 @@ def migrate(root: Path | str, map_path: Path | str, descriptions_path: Path | st
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="commonmind-migrate",
-                                     description="Migrate an Obsidian-style wiki to Commonmind.")
+    parser = argparse.ArgumentParser(
+        prog="commonmind-migrate", description="Migrate an Obsidian-style wiki to Commonmind."
+    )
     parser.add_argument("path", nargs="?", default=".", help="repository root (default: .)")
     parser.add_argument("--map", default="tools/migration/migration-map.yaml")
     parser.add_argument("--descriptions", default="tools/migration/description-map.yaml")
     parser.add_argument("--generated-by", required=True, help="actor for generated.by")
     parser.add_argument("--today", help="date for the log entry (default: today)")
     parser.add_argument("--dry-run", action="store_true", help="compute, but write nothing")
-    parser.add_argument("--domain-title", action="append", default=[], metavar="DOMAIN=TITLE",
-                        help="display title of a domain in index pages (repeatable)")
+    parser.add_argument(
+        "--domain-title",
+        action="append",
+        default=[],
+        metavar="DOMAIN=TITLE",
+        help="display title of a domain in index pages (repeatable)",
+    )
     args = parser.parse_args(argv)
     root = Path(args.path)
     titles = dict(item.split("=", 1) for item in args.domain_title)
     try:
-        report = migrate(root, root / args.map, root / args.descriptions, args.generated_by,
-                         today=args.today, dry_run=args.dry_run, domain_titles=titles)
+        report = migrate(
+            root,
+            root / args.map,
+            root / args.descriptions,
+            args.generated_by,
+            today=args.today,
+            dry_run=args.dry_run,
+            domain_titles=titles,
+        )
     except MigrationError as exc:
         print(f"aborted: {exc}")
         return 1

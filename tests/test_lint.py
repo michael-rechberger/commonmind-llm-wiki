@@ -29,8 +29,12 @@ def page(type_="method", title="A", extra="", body="", data_class="internal"):
     )
 
 
-def make_wiki(root: Path, pages: dict[str, str] | None = None, profile: str | None = PROFILE,
-              log: str | None = "# Log\n\n## [2026-10-18] ingest | Start\n") -> Path:
+def make_wiki(
+    root: Path,
+    pages: dict[str, str] | None = None,
+    profile: str | None = PROFILE,
+    log: str | None = "# Log\n\n## [2026-10-18] ingest | Start\n",
+) -> Path:
     files = {
         "wiki/index.md": '---\nokf_version: "0.2"\n---\n\n# Wiki\n\n- [Methods](/methods/index.md)\n',
         "wiki/methods/index.md": "# Methods\n\n- [A](/methods/a.md)\n- [B](/methods/b.md)\n",
@@ -164,8 +168,9 @@ def test_domain_field_not_allowed(tmp_path):
 def test_unknown_relation(tmp_path):
     pages = {
         "wiki/people/index.md": "# People\n\n- [P](/people/p.md)\n",
-        "wiki/people/p.md": page(type_="person", title="P", extra="relation: friend\n",
-                                 body="[A](/methods/a.md)"),
+        "wiki/people/p.md": page(
+            type_="person", title="P", extra="relation: friend\n", body="[A](/methods/a.md)"
+        ),
         "wiki/methods/a.md": page(title="A", body="[B](/methods/b.md) [P](/people/p.md)"),
     }
     assert "unknown-relation" in codes(lint(make_wiki(tmp_path, pages), now=NOW))
@@ -203,8 +208,9 @@ def test_unknown_data_class(tmp_path):
 def test_class_below_folder_default(tmp_path):
     pages = {
         "wiki/organizations/index.md": "# Orgs\n\n- [O](/organizations/o.md)\n",
-        "wiki/organizations/o.md": page(type_="organization", title="O", data_class="internal",
-                                        body="[A](/methods/a.md)"),
+        "wiki/organizations/o.md": page(
+            type_="organization", title="O", data_class="internal", body="[A](/methods/a.md)"
+        ),
         "wiki/methods/a.md": page(title="A", body="[B](/methods/b.md) [O](/organizations/o.md)"),
     }
     assert "class-below-default" in codes(lint(make_wiki(tmp_path, pages), now=NOW))
@@ -260,7 +266,9 @@ def test_broken_links(tmp_path):
 
 
 def test_external_and_wiki_links_are_not_checked(tmp_path):
-    body = "[B](/methods/b.md) [W](https://example.com) [O](wiki://other/x) [M](mailto:a@b.c) [S](#s)"
+    body = (
+        "[B](/methods/b.md) [W](https://example.com) [O](wiki://other/x) [M](mailto:a@b.c) [S](#s)"
+    )
     text = page(title="A", body=body)
     assert lint(make_wiki(tmp_path, {"wiki/methods/a.md": text}), now=NOW) == []
 
@@ -367,10 +375,15 @@ def test_core_only_wiki_has_no_errors(tmp_path):
     several wikis, folder defaults, stale_after, further profile keys) and the SHOULD files
     may be missing; the linter warns at most about SHOULD rules."""
     core_page = "---\ntype: method\ntitle: {t}\ndescription: One sentence.\nowner: human:jdoe\n---\n\n# {t}\n\nSee [{o}](/methods/{lo}.md).\n"
-    wiki = make_wiki(tmp_path, {
-        "wiki/methods/a.md": core_page.format(t="A", o="B", lo="b"),
-        "wiki/methods/b.md": core_page.format(t="B", o="A", lo="a"),
-    }, profile=CORE_PROFILE, log=None)
+    wiki = make_wiki(
+        tmp_path,
+        {
+            "wiki/methods/a.md": core_page.format(t="A", o="B", lo="b"),
+            "wiki/methods/b.md": core_page.format(t="B", o="A", lo="a"),
+        },
+        profile=CORE_PROFILE,
+        log=None,
+    )
     assert not (wiki / "sources").exists() and not (wiki / "AGENTS.md").exists()
     findings = lint(wiki, now=NOW)
     assert codes(findings, "error") == []
@@ -379,12 +392,21 @@ def test_core_only_wiki_has_no_errors(tmp_path):
 
 # K1: actors and trust fields as in OKF v0.2 (sections 5.2, 5.5)
 
+
 def _with(extra):
     return {"wiki/methods/a.md": page(title="A", body="See [B](/methods/b.md).", extra=extra)}
 
 
-@pytest.mark.parametrize("actor", ["wiki-update/1.2", "reference_agent/gemini-2.5-pro",
-                                   "process:nightly-check", "agent:wiki-update", "human:jdoe"])
+@pytest.mark.parametrize(
+    "actor",
+    [
+        "wiki-update/1.2",
+        "reference_agent/gemini-2.5-pro",
+        "process:nightly-check",
+        "agent:wiki-update",
+        "human:jdoe",
+    ],
+)
 @pytest.mark.parametrize("field", ["generated", "verified"])
 def test_okf_actor_forms_are_accepted_in_stamps(tmp_path, actor, field):
     author = actor if field == "generated" else "agent:other"
@@ -410,7 +432,8 @@ def test_verified_as_single_mapping_is_accepted(tmp_path):
 @pytest.mark.parametrize("owner", ["agent:wiki-update", "process:nightly", "wiki-update/1.2"])
 def test_owner_should_be_accountable(tmp_path, owner):
     content = page(title="A", body="See [B](/methods/b.md).").replace(
-        "owner: human:jdoe", f'owner: "{owner}"')
+        "owner: human:jdoe", f'owner: "{owner}"'
+    )
     findings = lint(make_wiki(tmp_path, {"wiki/methods/a.md": content}), now=NOW)
     assert codes(findings) == ["owner-not-accountable"]
     assert codes(findings, "warning") == ["owner-not-accountable"]
@@ -418,7 +441,8 @@ def test_owner_should_be_accountable(tmp_path, owner):
 
 def test_role_owner_is_accountable(tmp_path):
     content = page(title="A", body="See [B](/methods/b.md).").replace(
-        "owner: human:jdoe", "owner: role:delivery-lead")
+        "owner: human:jdoe", "owner: role:delivery-lead"
+    )
     assert lint(make_wiki(tmp_path, {"wiki/methods/a.md": content}), now=NOW) == []
 
 
@@ -434,16 +458,21 @@ def test_meeting_verified_as_single_mapping_is_accepted(tmp_path):
 
 # K2: no self-approval (section 5.5)
 
+
 @pytest.mark.parametrize("actor", ["human:jdoe", "wiki-update/1.2"])
 def test_self_verified_warns(tmp_path, actor):
-    extra = (f'generated: {{by: "{actor}", at: "2026-10-16T09:00:00Z"}}\n'
-             f'verified:\n  - {{by: "{actor}", at: "2026-10-16T10:00:00Z"}}\n')
+    extra = (
+        f'generated: {{by: "{actor}", at: "2026-10-16T09:00:00Z"}}\n'
+        f'verified:\n  - {{by: "{actor}", at: "2026-10-16T10:00:00Z"}}\n'
+    )
     findings = lint(make_wiki(tmp_path, _with(extra)), now=NOW)
     assert codes(findings) == ["self-verified"]
     assert codes(findings, "warning") == ["self-verified"]
 
 
 def test_verified_by_someone_else_is_clean(tmp_path):
-    extra = ('generated: {by: "wiki-update/1.2", at: "2026-10-16T09:00:00Z"}\n'
-             'verified: {by: "human:jdoe", at: "2026-10-16T10:00:00Z"}\n')
+    extra = (
+        'generated: {by: "wiki-update/1.2", at: "2026-10-16T09:00:00Z"}\n'
+        'verified: {by: "human:jdoe", at: "2026-10-16T10:00:00Z"}\n'
+    )
     assert lint(make_wiki(tmp_path, _with(extra)), now=NOW) == []
